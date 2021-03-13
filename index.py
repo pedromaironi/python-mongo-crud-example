@@ -17,12 +17,19 @@ client = pymongo.MongoClient(MONGO_URI, serverSelectionTimeoutMS=MONGO_TIME)
 base_data = client[MONGO_BASEDATA]
 collection = base_data[MONGO_COLLECTION]
 ID_ALUMNO = ""
-def showData():
+def showData(nombre="",sexo="",calificacion=""):
+    objectSearch = {}
+    if len(nombre)!=0:
+        objectSearch["nombre"]=nombre
+    if len(sexo)!=0:
+        objectSearch["sexo"]=sexo
+    if len(calificacion)!=0:
+        objectSearch["calificacion"]=calificacion
     try:
         registros=table.get_children()
         for registro in registros:
             table.delete(registro)
-        for document in collection.find():
+        for document in collection.find(objectSearch):
             table.insert('',0,text=document['_id'], values = document['nombre'])
             #print(document['nombre'] + " " + str(document['calificacion']))
         client.server_info()
@@ -63,6 +70,7 @@ def doubleClickTable(event):
     score.insert(0,document['score'])
     crear['state']='disabled'
     editar['state']='normal'
+    delete['state']='normal'
 
 def editarR():
     global ID_ALUMNO
@@ -81,6 +89,25 @@ def editarR():
     showData()
     crear['state']='normal'
     editar['state']='disabled'
+    delete['state']='disabled'
+
+def deleteR():
+
+    global ID_ALUMNO
+    try:
+        idSearch={"_id":ObjectId(ID_ALUMNO)}
+        collection.delete_one(idSearch)
+        name.delete(0,END)
+        sex.delete(0,END)
+        score.delete(0,END)
+    except pymongo.errors.ConnectionFailure as error:
+        print(error)
+    showData()
+    crear['state']='normal'
+    editar['state']='disabled'
+    delete['state']='disabled'
+def searchR():
+    showData(searchName.get(),searchSex.get(),searchScore.get())
 
 window = Tk()
 table = ttk.Treeview(window, columns = 2)
@@ -104,12 +131,35 @@ score.grid(row=4, column=1)
 
 # Botton
 crear=Button(window, text="Create student", command=create,bg="green",fg="white")
-crear.grid(row=5,columnspan=2)
+crear.grid(row=5,columnspan=2,sticky=(W+E))
 
 # Edit
 
-editar=Button(window, text="Edit student", command=editarR,bg="green",fg="yellow")
-editar.grid(row=6,columnspan=2)
+editar=Button(window, text="Edit student", command=editarR,bg="yellow",fg="yellow")
+editar.grid(row=6,columnspan=2,sticky=(W+E))
 editar['state'] = 'disabled'
+
+# Delete
+
+delete=Button(window, text="Delete student", command=deleteR,bg="red",fg="yellow")
+delete.grid(row=7,columnspan=2, sticky=(W+E))
+delete['state'] = 'disabled'
+
+# Buscar
+
+Label(window, text="search Name").grid(row=8,column=0)
+searchName=Entry(window)
+searchName.grid(row=8, column=1)
+
+Label(window, text="search Sex").grid(row=9,column=0)
+searchSex=Entry(window)
+searchSex.grid(row=9, column=1)
+
+Label(window, text="search Score").grid(row=10,column=0)
+searchScore=Entry(window)
+searchScore.grid(row=10, column=1)
+search=Button(window, text="Search student", command=searchR,bg="blue",fg="yellow")
+search.grid(row=11,columnspan=2, sticky=(W+E))
+search['state'] = 'normal'
 showData()
 window.mainloop()
